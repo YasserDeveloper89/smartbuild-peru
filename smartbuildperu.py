@@ -1,75 +1,72 @@
 import streamlit as st
 from fpdf import FPDF
-from io import BytesIO
+import io
 
-st.set_page_config(page_title="SmartBuild Perú PRO", layout="centered")
+st.set_page_config(page_title="SmartBuild Perú", layout="centered")
 
-st.title("SmartBuild Perú - Calculadora Profesional de Presupuesto")
+st.title("SmartBuild Perú")
+st.subheader("Calculadora de Presupuesto de Construcción")
 
-# Opciones de entrada
-ubicacion = st.selectbox("Ubicación del proyecto", ["Lima", "Arequipa", "Cusco", "Trujillo", "Piura"])
-area = st.number_input("Área del terreno (m²)", min_value=10.0, step=1.0)
-pisos = st.slider("Número de pisos", min_value=1, max_value=5, value=1)
-acabado = st.selectbox("Tipo de acabado", ["Económico", "Estándar", "Premium"])
+# Entradas del usuario
+ubicacion = st.selectbox("Ubicación del terreno", ["Lima", "Arequipa", "Cusco", "Otra"])
+area = st.number_input("Área a construir (en m²)", min_value=10, max_value=1000, step=10)
+acabado = st.selectbox("Tipo de acabado", ["Económico", "Intermedio", "Lujo"])
+pisos = st.slider("Número de pisos", 1, 5, 1)
 
-# Costos base por m² según tipo de acabado
+# Costos base por m² según ubicación y acabado
 costos_base = {
-    "Económico": 350,
-    "Estándar": 550,
-    "Premium": 800
+    "Lima": {"Económico": 1200, "Intermedio": 1600, "Lujo": 2200},
+    "Arequipa": {"Económico": 1000, "Intermedio": 1400, "Lujo": 2000},
+    "Cusco": {"Económico": 1100, "Intermedio": 1500, "Lujo": 2100},
+    "Otra": {"Económico": 900, "Intermedio": 1300, "Lujo": 1800},
 }
 
-materiales = {
-    "Cemento (bolsas)": 0.2 * area * pisos,
-    "Arena (m³)": 0.1 * area * pisos,
-    "Fierro (kg)": 5 * area * pisos,
-    "Ladrillos (unidades)": 130 * area * pisos,
-    "Mano de obra (S/)": 150 * area * pisos
-}
+# Estimar materiales básicos (valores simples para ejemplo)
+def estimar_materiales(area, pisos):
+    return {
+        "Cemento (bolsas)": area * pisos * 0.3,
+        "Arena (m³)": area * pisos * 0.2,
+        "Ladrillos (unidades)": area * pisos * 120,
+        "Hierro (kg)": area * pisos * 15,
+        "Mano de obra (jornales)": area * pisos * 0.2,
+    }
 
-costo_total = costos_base[acabado] * area * pisos
-
+# Calcular
 if st.button("Calcular presupuesto"):
-    st.subheader("Resumen del presupuesto")
-    st.markdown(f"- **Ubicación:** {ubicacion}")
-    st.markdown(f"- **Área:** {area} m²")
-    st.markdown(f"- **Pisos:** {pisos}")
-    st.markdown(f"- **Tipo de acabado:** {acabado}")
-    st.markdown(f"- **Costo estimado total:** S/ {costo_total:,.2f}")
+    costo_unitario = costos_base[ubicacion][acabado]
+    costo_total = costo_unitario * area * pisos
+    materiales_estimados = estimar_materiales(area, pisos)
 
-    st.subheader("Materiales estimados")
-    for mat, cantidad in materiales.items():
-        unidad = "S/" if "Mano de obra" in mat else ""
-        st.markdown(f"- {mat}: {unidad}{cantidad:,.2f}")
+    st.success(f"Presupuesto estimado: S/ {costo_total:,.2f}")
+    st.subheader("Materiales estimados:")
+    for mat, qty in materiales_estimados.items():
+        st.write(f"- {mat}: {qty:.2f}")
 
-    # Crear PDF en memoria
+    # Crear PDF
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, "Presupuesto de Construcción - SmartBuild Perú", ln=True)
     pdf.set_font("Arial", size=12)
-    pdf.ln(5)
-    pdf.cell(0, 10, f"Ubicación: {ubicacion}", ln=True)
-    pdf.cell(0, 10, f"Área: {area} m²", ln=True)
-    pdf.cell(0, 10, f"Pisos: {pisos}", ln=True)
-    pdf.cell(0, 10, f"Tipo de acabado: {acabado}", ln=True)
-    pdf.cell(0, 10, f"Costo estimado total: S/ {costo_total:,.2f}", ln=True)
-    pdf.ln(5)
-    pdf.set_font("Arial", "B", 14)
-    pdf.cell(0, 10, "Materiales estimados", ln=True)
-    pdf.set_font("Arial", size=12)
-    for mat, cantidad in materiales.items():
-        unidad = "S/" if "Mano de obra" in mat else ""
-        pdf.cell(0, 10, f"{mat}: {unidad}{cantidad:,.2f}", ln=True)
+    pdf.cell(200, 10, txt="Presupuesto Detallado - SmartBuild Perú", ln=True, align="C")
+    pdf.ln(10)
+    pdf.cell(200, 10, txt=f"Ubicación: {ubicacion}", ln=True)
+    pdf.cell(200, 10, txt=f"Área: {area} m²", ln=True)
+    pdf.cell(200, 10, txt=f"Acabado: {acabado}", ln=True)
+    pdf.cell(200, 10, txt=f"Pisos: {pisos}", ln=True)
+    pdf.cell(200, 10, txt=f"Presupuesto estimado: S/ {costo_total:,.2f}", ln=True)
+    pdf.ln(10)
+    pdf.cell(200, 10, txt="Materiales estimados:", ln=True)
+    for mat, qty in materiales_estimados.items():
+        pdf.cell(200, 10, txt=f"- {mat}: {qty:.2f}", ln=True)
 
-    # Guardar en memoria para descarga
-    pdf_buffer = BytesIO()
+    # PDF en memoria
+    pdf_buffer = io.BytesIO()
     pdf.output(pdf_buffer)
     pdf_buffer.seek(0)
 
+    # Botón de descarga
     st.download_button(
-        label="Descargar PDF del presupuesto",
+        label="Descargar presupuesto en PDF",
         data=pdf_buffer,
-        file_name="presupuesto_smartbuild_peru.pdf",
+        file_name="Presupuesto_SmartBuild.pdf",
         mime="application/pdf"
     )
