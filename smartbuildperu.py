@@ -1,97 +1,74 @@
-
 import streamlit as st
 from fpdf import FPDF
+import io
 
-st.set_page_config(page_title="SmartBuild Pro", layout="centered")
-
-# --- Encabezado ---
-st.title("SmartBuild Perú - Versión Pro Final")
-st.markdown("Calculadora profesional de materiales y costos para obras")
-
-# --- Datos de entrada ---
-ubicaciones = {
-    "Lima": 1200,
-    "Arequipa": 1000,
-    "Cusco": 950,
-    "Trujillo": 1050
-}
-
-acabados = {
-    "Básico": 1.0,
-    "Intermedio": 1.2,
-    "Premium": 1.5
-}
-
-st.header("Parámetros del Proyecto")
-ubicacion = st.selectbox("Ubicación del proyecto", list(ubicaciones.keys()))
-area = st.number_input("Área del proyecto (m²)", min_value=10.0, max_value=1000.0, value=100.0, step=10.0)
-acabado = st.selectbox("Nivel de acabado", list(acabados.keys()))
-pisos = st.slider("Número de pisos", 1, 5, 1)
-
-# --- Cálculo de materiales estimados ---
-def calcular_materiales(area_total):
-    materiales = {
-        "Cemento (bolsas)": round(area_total * 0.2, 2),  # aprox 0.2 bolsas por m²
-        "Arena (m³)": round(area_total * 0.05, 2),
-        "Grava (m³)": round(area_total * 0.04, 2),
-        "Ladrillos (unidades)": round(area_total * 55),  # 55 ladrillos por m²
-        "Acero (kg)": round(area_total * 7.5, 2)
-    }
-    return materiales
+st.set_page_config(page_title="SmartBuild Perú", layout="centered")
+st.title("SmartBuild Perú - Calculadora de Presupuesto")
 
 if "historial" not in st.session_state:
     st.session_state.historial = []
 
+st.subheader("Datos del proyecto")
+
+ubicacion = st.selectbox("Ubicación del terreno", ["Lima", "Cusco", "Arequipa", "Trujillo"])
+area = st.number_input("Área del terreno (m²)", min_value=10.0, max_value=1000.0, step=1.0)
+acabado = st.selectbox("Tipo de acabado", ["Económico", "Estándar", "Premium"])
+pisos = st.slider("Número de pisos", min_value=1, max_value=5)
+
+precios_m2 = {
+    "Económico": 450,
+    "Estándar": 700,
+    "Premium": 1100
+}
+
+materiales_base = {
+    "Arena (m³)": 0.05,
+    "Cemento (bolsas)": 0.5,
+    "Ladrillo (unidades)": 30,
+    "Hierro (kg)": 5
+}
+
 if st.button("Calcular presupuesto"):
-    costo_base = ubicaciones[ubicacion]
-    factor_acabado = acabados[acabado]
-    area_total = area * pisos
-    costo_total = costo_base * area_total * factor_acabado
+    precio_m2 = precios_m2[acabado]
+    costo_total = precio_m2 * area * pisos
+    materiales = {mat: round(cantidad * area * pisos, 2) for mat, cantidad in materiales_base.items()}
 
-    materiales = calcular_materiales(area_total)
-
-    st.subheader("Resumen del proyecto")
-    st.markdown(f"**Ubicación:** {ubicacion}")
-    st.markdown(f"**Área total:** {area_total} m²")
-    st.markdown(f"**Nivel de acabado:** {acabado}")
-    st.markdown(f"**Pisos:** {pisos}")
-    st.markdown(f"**Costo estimado:** S/. {costo_total:,.2f}")
-
-    st.subheader("Materiales estimados:")
+    st.success(f"Presupuesto estimado: S/ {costo_total:,.2f}")
+    st.subheader("Materiales estimados")
     for mat, cant in materiales.items():
-        st.markdown(f"- {mat}: {cant}")
+        st.write(f"- {mat}: {cant}")
 
+    # Guardar historial
     st.session_state.historial.append((ubicacion, area, acabado, pisos, costo_total))
 
-    # Exportar PDF
+    # Crear PDF en memoria
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="Resumen del Proyecto SmartBuild", ln=True, align="C")
-    pdf.cell(200, 10, txt=f"Ubicación: {ubicacion}", ln=True)
-    pdf.cell(200, 10, txt=f"Área Total: {area_total} m²", ln=True)
-    pdf.cell(200, 10, txt=f"Acabado: {acabado}", ln=True)
-    pdf.cell(200, 10, txt=f"Pisos: {pisos}", ln=True)
-    pdf.cell(200, 10, txt=f"Costo Total: S/. {costo_total:,.2f}", ln=True)
-    pdf.cell(200, 10, txt="Materiales estimados:", ln=True)
+    pdf.cell(200, 10, "SmartBuild Perú - Presupuesto", ln=True, align="C")
+    pdf.ln(10)
+    pdf.cell(200, 10, f"Ubicación: {ubicacion}", ln=True)
+    pdf.cell(200, 10, f"Área: {area} m²", ln=True)
+    pdf.cell(200, 10, f"Acabado: {acabado}", ln=True)
+    pdf.cell(200, 10, f"Pisos: {pisos}", ln=True)
+    pdf.cell(200, 10, f"Costo Total: S/ {costo_total:,.2f}", ln=True)
+    pdf.ln(5)
+    pdf.cell(200, 10, "Materiales estimados:", ln=True)
     for mat, cant in materiales.items():
-        pdf.cell(200, 10, txt=f"- {mat}: {cant}", ln=True)
+        pdf.cell(200, 10, f"- {mat}: {cant}", ln=True)
 
-    # Guardar PDF en memoria y mostrar botón de descarga
-import io
+    pdf_buffer = io.BytesIO()
+    pdf.output(pdf_buffer)
+    st.download_button(
+        label="Descargar PDF",
+        data=pdf_buffer.getvalue(),
+        file_name="presupuesto_smartbuild.pdf",
+        mime="application/pdf"
+    )
 
-pdf_output = pdf.output(dest='S').encode('latin1')  # Obtener contenido en bytes
-st.download_button(
-    label="Descargar presupuesto en PDF",
-    data=pdf_output,
-    file_name="SmartBuild_Presupuesto.pdf",
-    mime="application/pdf"
-)
-    st.success("PDF generado exitosamente.")
-    st.markdown("[Descargar PDF](sandbox:/mnt/data/SmartBuild_Presupuesto.pdf)", unsafe_allow_html=True)
-
-# --- Historial ---
+# Mostrar historial
 if st.session_state.historial:
     st.subheader("Historial de presupuestos")
-    for i, h in enumerate(st.session_state.historial[::-1]):
-        st.markdown(f"{i+1}. {h}")
+    for i, item in enumerate(st.session_state.historial, 1):
+        ubic, ar, ac, pi, costo = item
+        st.text(f"{i}. {ubic} | {ar} m² | {ac} | {pi} pisos => S/ {costo:,.2f}")
