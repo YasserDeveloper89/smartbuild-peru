@@ -54,3 +54,18 @@ if st.button("Calcular presupuesto"):
         file_name="presupuesto_smartbuild.pdf",
         mime="application/pdf"
     )
+st.markdown("---")
+    st.subheader("Compartir por WhatsApp")
+
+    # Crear mensaje de texto
+    mensaje_whatsapp = f"Presupuesto para construcción en {ubicacion} ({acabado}, {pisos} piso/s, {area} m²): S/ {total:,.2f}"
+
+    # Codificar mensaje para URL
+    import urllib.parse
+    mensaje_encoded = urllib.parse.quote(mensaje_whatsapp)
+
+    # Enlace de WhatsApp
+    url_whatsapp = f"https://wa.me/?text={mensaje_encoded}"
+
+    # Botón para abrir WhatsApp
+    st.markdown(f"[Compartir en WhatsApp]({url_whatsapp})", unsafe_allow_html=True)
