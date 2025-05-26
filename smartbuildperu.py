@@ -9,8 +9,8 @@ area = st.number_input("Área (m²)", min_value=10.0, max_value=1000.0, value=10
 acabado = st.selectbox("Tipo de acabado", ["Económico", "Estándar", "Premium"])
 pisos = st.number_input("Cantidad de pisos", min_value=1, max_value=5, value=1)
 
-costos_base = {"Lima": 1100, "Arequipa": 950, "Cusco": 900, "Trujillo": 920, "Otro": 850}
-multiplicador = {"Económico": 1.0, "Estándar": 1.3, "Premium": 1.7}
+costos_base = {"Lima": 1300, "Arequipa": 1200, "Cusco": 1100, "Trujillo": 1150, "Otro": 1000}
+multiplicador = {"Económico": 1.0, "Estándar": 1.15, "Premium": 1.35}
 
 if st.button("Calcular presupuesto"):
     costo_m2 = costos_base[ubicacion] * multiplicador[acabado]
