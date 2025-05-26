@@ -77,7 +77,16 @@ if st.button("Calcular presupuesto"):
     for mat, cant in materiales.items():
         pdf.cell(200, 10, txt=f"- {mat}: {cant}", ln=True)
 
-    pdf.output("/mnt/data/SmartBuild_Presupuesto.pdf")
+    # Guardar PDF en memoria y mostrar botón de descarga
+import io
+
+pdf_output = pdf.output(dest='S').encode('latin1')  # Obtener contenido en bytes
+st.download_button(
+    label="Descargar presupuesto en PDF",
+    data=pdf_output,
+    file_name="SmartBuild_Presupuesto.pdf",
+    mime="application/pdf"
+)
     st.success("PDF generado exitosamente.")
     st.markdown("[Descargar PDF](sandbox:/mnt/data/SmartBuild_Presupuesto.pdf)", unsafe_allow_html=True)
 
