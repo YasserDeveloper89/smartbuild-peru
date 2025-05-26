@@ -69,3 +69,4 @@ st.markdown("---")
 
     # Botón para abrir WhatsApp
     st.markdown(f"[Compartir en WhatsApp]({url_whatsapp})", unsafe_allow_html=True)
+    
