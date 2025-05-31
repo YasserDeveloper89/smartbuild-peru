@@ -5,7 +5,7 @@ import math
 import pandas as pd
 
 st.set_page_config(page_title="SmartBuild Perú", layout="centered")
-st.title("SmartBuild Perú - Estimación de presupuestos para proyectos de construcción")
+st.title("🏗️ SmartBuild Perú - Estimación de presupuestos para proyectos de construcción")
 
 # Zonas y coordenadas
 zonas_info = {
